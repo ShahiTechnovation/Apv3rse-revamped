@@ -156,8 +156,9 @@ export async function streamText(props: {
   contextOptimization?: boolean;
   enabledTools?: string[];
   aptosSystemPrompt?: string;
+  enableExtendedThinking?: boolean;
 }) {
-  const { messages, env: serverEnv, options, apiKeys, files, providerSettings, promptId, contextOptimization, enabledTools = ['aptos'], aptosSystemPrompt } = props;
+  const { messages, env: serverEnv, options, apiKeys, files, providerSettings, promptId, contextOptimization, enabledTools = ['aptos'], aptosSystemPrompt, enableExtendedThinking = false } = props;
 
   // Log enabled tools for debugging
   logger.debug('Enabled tools:', enabledTools);
@@ -236,6 +237,15 @@ export async function streamText(props: {
 
   logger.info(`Sending llm call to ${provider.name} with model ${modelDetails.name}`);
 
+  // Check if we should enable extended thinking for Claude 4.5 models
+  const isClaude45 = modelDetails.name.includes('claude-sonnet-4-5') || modelDetails.name.includes('claude-haiku-4-5');
+  const extendedThinkingOptions = enableExtendedThinking && isClaude45 ? {
+    experimental_thinking: {
+      type: 'enabled' as const,
+      budget_tokens: modelDetails.name.includes('sonnet') ? 10000 : 5000
+    }
+  } : {};
+
   return await _streamText({
     model: provider.getModelInstance({
       model: currentModel,
@@ -247,5 +257,6 @@ export async function streamText(props: {
     maxTokens: dynamicMaxTokens,
     messages: convertToCoreMessages(processedMessages as any),
     ...options,
+    ...extendedThinkingOptions,
   });
 }

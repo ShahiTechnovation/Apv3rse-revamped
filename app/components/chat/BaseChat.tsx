@@ -386,11 +386,11 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
             >
               {!chatStarted && (
                 <div id="intro" className="mt-[16vh] max-w-chat mx-auto text-center px-4 lg:px-0">
-                  <h1 className="text-3xl lg:text-6xl font-bold text-black dark:text-bolt-elements-textPrimary2 mb-4 animate-fade-in">
+                  <h1 className="text-3xl lg:text-6xl font-bold text-bolt-elements-textPrimary mb-4 animate-fade-in">
                     Lets Start Building
                   </h1>
 
-                  <p className="text-md lg:text-xl mb-8 text-gray-700 dark:text-bolt-elements-textSecondary animate-fade-in animation-delay-200">
+                  <p className="text-md lg:text-xl mb-8 text-bolt-elements-textSecondary animate-fade-in animation-delay-200">
                     Bring ideas to life in seconds or get help on existing projects.
                   </p>
                 </div>
@@ -473,7 +473,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                       <textarea
                         ref={textareaRef}
                         className={classNames(
-                          'w-full pl-4 pt-4 pr-16 outline-none resize-none text-bolt-elements-textPrimary placeholder-bolt-elements-text-textTertiary bg-transparent text-sm',
+                          'w-full pl-4 pt-4 pr-16 outline-none resize-none text-black placeholder-gray-400 bg-transparent text-sm',
                           'transition-all duration-200',
                           'hover:border-bolt-elements-focus',
                         )}

@@ -33,13 +33,14 @@ function parseCookies(cookieHeader: string): Record<string, string> {
 }
 
 async function chatAction({ context, request }: ActionFunctionArgs) {
-  const { messages, files, promptId, contextOptimization, enabledTools, isAptosMode } = await request.json<{
+  const { messages, files, promptId, contextOptimization, enabledTools, isAptosMode, enableExtendedThinking } = await request.json<{
     messages: Messages;
     files: any;
     promptId?: string;
     contextOptimization: boolean;
     enabledTools?: string[];
     isAptosMode?: boolean;
+    enableExtendedThinking?: boolean;
   }>();
 
   const cookieHeader = request.headers.get('Cookie');
@@ -99,6 +100,34 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           cumulativeUsage.totalTokens += usage.totalTokens || 0;
         }
 
+        // Handle Claude 4.5 refusal stop reason
+        if ((finishReason as string) === 'refusal') {
+          logger.warn('Model refused to generate response');
+          const encoder = new TextEncoder();
+          const refusalStream = createDataStream({
+            async execute(dataStream) {
+              dataStream.writeMessageAnnotation({
+                type: 'error',
+                value: {
+                  message: 'The model refused to generate a response for this request.',
+                  type: 'refusal'
+                },
+              });
+            },
+            onError: (error: any) => `Custom error: ${error.message}`,
+          }).pipeThrough(
+            new TransformStream({
+              transform: (chunk, controller) => {
+                const str = typeof chunk === 'string' ? chunk : JSON.stringify(chunk);
+                controller.enqueue(encoder.encode(str));
+              },
+            }),
+          );
+          await stream.switchSource(refusalStream);
+          stream.close();
+          return;
+        }
+
         if (finishReason !== 'length') {
           const encoder = new TextEncoder();
           const usageStream = createDataStream({
@@ -151,6 +180,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           contextOptimization,
           enabledTools,
           aptosSystemPrompt,
+          enableExtendedThinking,
         });
 
         stream.switchSource(result.toDataStream());
@@ -172,6 +202,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
       contextOptimization,
       enabledTools,
       aptosSystemPrompt,
+      enableExtendedThinking,
     });
 
     (async () => {
