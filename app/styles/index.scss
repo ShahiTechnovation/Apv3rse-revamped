@@ -1,0 +1,44 @@
+@use 'variables.scss';
+@use 'z-index.scss';
+@use 'animations.scss';
+@use 'components/terminal.scss';
+@use 'components/resize-handle.scss';
+@use 'components/code.scss';
+@use 'components/editor.scss';
+@use 'components/toast.scss';
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+}
+
+// :root {
+//   --gradient-opacity: 0.8;
+//   --primary-color: rgba(158, 117, 240, var(--gradient-opacity));
+//   --secondary-color: rgba(138, 43, 226, var(--gradient-opacity));
+//   --accent-color: rgba(128, 59, 239, var(--gradient-opacity));
+//   --primary-color: rgba(147, 112, 219, var(--gradient-opacity));
+//   --secondary-color: rgba(138, 43, 226, var(--gradient-opacity));
+//   --accent-color: rgba(180, 170, 220, var(--gradient-opacity));
+// }
+#intro h1 {
+  color: white;
+  font-family: 'Cooper Black', serif; 
+}
+#intro p {
+  color: #e1e7fa;
+}
+#textarea1{
+  background-color: #002ac2;
+}
+
+:root {
+  // --gradient-opacity: 1; 
+   // Increased opacity
+  // --primary-color: rgba(48, 124, 240,1); 
+  // --secondary-color: rgba(48, 124, 255,1); 
+  // --accent-color: rgba(48, 124, 240,1); 
+  background-color: #2477ed; /* For browsers that do not support gradients */
+  background-image: linear-gradient(#2477ed, #e8edff);
+}

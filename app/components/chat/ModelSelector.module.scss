@@ -1,0 +1,14 @@
+.modelSelector {
+    .select {
+      @apply flex-1 p-2 rounded-lg border-2 transition-all;
+      @apply bg-white text-black; /* Changed text and background color */
+      @apply text-xs; /* Reduced text size */
+      @apply border-gray-500;
+      @apply hover:bg-gray-200; /* Adjusted hover effect for white background */
+      @apply focus:outline-none focus:ring-2 focus:ring-blue-500;
+  
+      &:disabled {
+        @apply cursor-not-allowed;
+      }
+    }
+  }

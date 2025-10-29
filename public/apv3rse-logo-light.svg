@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60" fill="none">
+  <!-- Logo for light theme -->
+  <defs>
+    <linearGradient id="hexGradientLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#764ba2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f093fb;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="textGradientLight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Hexagon shape -->
+  <path d="M30 10 L45 20 L45 40 L30 50 L15 40 L15 20 Z" fill="url(#hexGradientLight)" />
+  
+  <!-- Stylized "A" in the center -->
+  <path d="M30 20 L24 40 L27 40 L28.5 35 L31.5 35 L33 40 L36 40 L30 20 Z M29 32 L31 32 L30 27 Z" fill="white" />
+  
+  <!-- Orbital rings -->
+  <ellipse cx="30" cy="30" rx="22" ry="8" fill="none" stroke="url(#hexGradientLight)" stroke-width="1.5" opacity="0.4" transform="rotate(-30 30 30)" />
+  <ellipse cx="30" cy="30" rx="22" ry="8" fill="none" stroke="url(#hexGradientLight)" stroke-width="1.5" opacity="0.4" transform="rotate(30 30 30)" />
+  
+  <!-- Text "Apv3rse" -->
+  <text x="60" y="38" font-family="'Inter', 'Segoe UI', Arial, sans-serif" font-size="28" font-weight="700">
+    <tspan fill="url(#textGradientLight)">Ap</tspan><tspan fill="#1a1a1a">v3rse</tspan>
+  </text>
+</svg>

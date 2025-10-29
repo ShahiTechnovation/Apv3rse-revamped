@@ -1,0 +1,83 @@
+.BaseChat {
+  &[data-chat-visible='false'] {
+    --workbench-inner-width: 100%;
+    --workbench-left: 0;
+
+    .Chat {
+      --at-apply: bolt-ease-cubic-bezier;
+      transition-property: transform, opacity;
+      transition-duration: 0.3s;
+      will-change: transform, opacity;
+      transform: translateX(-50%);
+      opacity: 0;
+    }
+  }
+}
+
+.Chat {
+  opacity: 1;
+}
+
+.PromptEffectContainer {
+  --prompt-container-offset: 50px;
+  --prompt-line-stroke-width: 1px;
+  position: absolute;
+  pointer-events: none;
+  inset: calc(var(--prompt-container-offset) / -2);
+  width: calc(100% + var(--prompt-container-offset));
+  height: calc(100% + var(--prompt-container-offset));
+}
+
+.PromptEffectLine {
+  width: calc(100% - var(--prompt-container-offset) + var(--prompt-line-stroke-width));
+  height: calc(100% - var(--prompt-container-offset) + var(--prompt-line-stroke-width));
+  x: calc(var(--prompt-container-offset) / 2 - var(--prompt-line-stroke-width) / 2);
+  y: calc(var(--prompt-container-offset) / 2 - var(--prompt-line-stroke-width) / 2);
+  rx: calc(8px - var(--prompt-line-stroke-width));
+  fill: transparent;
+  stroke-width: var(--prompt-line-stroke-width);
+  stroke: url(#line-gradient);
+  stroke-dasharray: 35px 65px;
+  stroke-dashoffset: 10;
+}
+
+.PromptShine {
+  fill: url(#shine-gradient);
+  mix-blend-mode: overlay;
+}
+
+// Send Button Styles
+.sendButton {
+  background-color: #729af1; // Your desired blue
+  color: white;
+  padding: 0.2rem 0.5rem;       // Adjust padding as needed
+  border-radius: 0.5rem;    // Adjust rounding as needed
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;             // Space between text and icon
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 10;              // Ensure it's above other elements
+  white-space: nowrap;     // Prevent text from wrapping
+
+  .i-ph-arrow-right {
+    font-size: 0.5rem;     // Adjust icon size if needed
+  }
+  
+  &:hover {
+    background-color: #4894c7; // Darker blue on hover
+  }
+}
+
+#textarea12 {
+  > div:nth-child(2) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem;
+
+    .shiftReturnText {
+      font-size: 0.65rem; // Adjust this value as needed
+    }
+  }
+}
