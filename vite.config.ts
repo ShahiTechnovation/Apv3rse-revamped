@@ -26,10 +26,41 @@ export default defineConfig((config) => {
     define: {
       __COMMIT_HASH: JSON.stringify(getGitHash()),
       __APP_VERSION: JSON.stringify(process.env.npm_package_version),
+      __VERCEL_ENV: JSON.stringify(process.env.VERCEL_ENV || 'development'),
       // 'process.env': JSON.stringify(process.env)
     },
     build: {
       target: 'esnext',
+      rollupOptions: {
+        output: {
+          manualChunks: config.mode === 'production' ? (id) => {
+            // Only apply manual chunking for client build (not SSR)
+            if (id.includes('node_modules')) {
+              if (id.includes('react') || id.includes('@remix-run/react')) {
+                return 'vendor-react';
+              }
+              if (id.includes('@codemirror')) {
+                return 'vendor-codemirror';
+              }
+              if (id.includes('@ai-sdk') || id.includes('/ai/')) {
+                return 'vendor-ai';
+              }
+              if (id.includes('@aptos-labs')) {
+                return 'vendor-aptos';
+              }
+            }
+          } : undefined,
+        },
+      },
+      chunkSizeWarningLimit: 1000,
+      minify: 'esbuild',
+      sourcemap: config.mode !== 'production',
+    },
+    server: {
+      headers: {
+        'Cross-Origin-Embedder-Policy': 'require-corp',
+        'Cross-Origin-Opener-Policy': 'same-origin',
+      },
     },
     plugins: [
       nodePolyfills({

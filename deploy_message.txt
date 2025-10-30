@@ -1,0 +1,9 @@
+Production deployment - Clean version with essential files only
+
+- Updated .vercelignore to exclude unnecessary files
+- Configured vercel.json for proper build
+- Removed test and documentation files from deployment
+- Added OpenRouter provider support
+- Fixed token limit handling
+- Improved error handling with timeouts
+- Enhanced wallet integration

@@ -4,3 +4,8 @@ compatibility_flags = ["nodejs_compat"]
 compatibility_date = "2024-07-01"
 pages_build_output_dir = "./build/client"
 send_metrics = false
+
+# Vectorize for semantic search
+[[vectorize]]
+binding = "APTOS_VECTORIZE"
+index_name = "aptos-move-docs"

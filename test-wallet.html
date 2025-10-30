@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallet Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            background: #2a2a2a;
+        }
+        .success { background: #1a4d1a; }
+        .error { background: #4d1a1a; }
+        .warning { background: #4d4d1a; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background: #667eea;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #764ba2;
+        }
+        pre {
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Wallet Connection Test</h1>
+    
+    <div id="status" class="status">Checking wallet availability...</div>
+    
+    <div>
+        <h2>Actions:</h2>
+        <button onclick="checkWallet()">Check Petra Wallet</button>
+        <button onclick="connectWallet()">Connect Wallet</button>
+        <button onclick="disconnectWallet()">Disconnect Wallet</button>
+        <button onclick="getAccount()">Get Account Info</button>
+    </div>
+    
+    <div>
+        <h2>Console Output:</h2>
+        <pre id="console"></pre>
+    </div>
+
+    <script>
+        const statusEl = document.getElementById('status');
+        const consoleEl = document.getElementById('console');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}\n`;
+            consoleEl.textContent += logMessage;
+            console.log(message);
+            
+            if (type === 'success') {
+                statusEl.className = 'status success';
+            } else if (type === 'error') {
+                statusEl.className = 'status error';
+            } else if (type === 'warning') {
+                statusEl.className = 'status warning';
+            } else {
+                statusEl.className = 'status';
+            }
+            statusEl.textContent = message;
+        }
+        
+        async function checkWallet() {
+            log('Checking for Petra wallet...');
+            
+            // Check if window.aptos exists
+            if (typeof window.aptos !== 'undefined') {
+                log('✅ Petra wallet detected!', 'success');
+                log('Wallet name: ' + (window.aptos.name || 'Unknown'));
+                
+                // Check if connected
+                try {
+                    const isConnected = await window.aptos.isConnected();
+                    log('Connected: ' + isConnected);
+                    
+                    if (isConnected) {
+                        const account = await window.aptos.account();
+                        log('Account: ' + account.address);
+                        log('Public Key: ' + account.publicKey);
+                    }
+                } catch (error) {
+                    log('Error checking connection: ' + error.message, 'error');
+                }
+            } else {
+                log('❌ Petra wallet not found. Please install it from https://petra.app/', 'error');
+                
+                // Check for other wallets
+                if (window.martian) {
+                    log('Found Martian wallet instead', 'warning');
+                }
+                if (window.pontem) {
+                    log('Found Pontem wallet instead', 'warning');
+                }
+            }
+        }
+        
+        async function connectWallet() {
+            log('Attempting to connect wallet...');
+            
+            if (typeof window.aptos === 'undefined') {
+                log('❌ No wallet found!', 'error');
+                return;
+            }
+            
+            try {
+                const response = await window.aptos.connect();
+                log('✅ Wallet connected successfully!', 'success');
+                log('Response: ' + JSON.stringify(response, null, 2));
+                
+                const account = await window.aptos.account();
+                log('Account Address: ' + account.address);
+                log('Public Key: ' + account.publicKey);
+                
+                const network = await window.aptos.network();
+                log('Network: ' + network);
+            } catch (error) {
+                log('❌ Failed to connect: ' + error.message, 'error');
+                console.error(error);
+            }
+        }
+        
+        async function disconnectWallet() {
+            log('Attempting to disconnect wallet...');
+            
+            if (typeof window.aptos === 'undefined') {
+                log('❌ No wallet found!', 'error');
+                return;
+            }
+            
+            try {
+                await window.aptos.disconnect();
+                log('✅ Wallet disconnected successfully!', 'success');
+            } catch (error) {
+                log('❌ Failed to disconnect: ' + error.message, 'error');
+            }
+        }
+        
+        async function getAccount() {
+            log('Getting account information...');
+            
+            if (typeof window.aptos === 'undefined') {
+                log('❌ No wallet found!', 'error');
+                return;
+            }
+            
+            try {
+                const isConnected = await window.aptos.isConnected();
+                if (!isConnected) {
+                    log('⚠️ Wallet not connected', 'warning');
+                    return;
+                }
+                
+                const account = await window.aptos.account();
+                const network = await window.aptos.network();
+                
+                log('✅ Account Information:', 'success');
+                log('Address: ' + account.address);
+                log('Public Key: ' + account.publicKey);
+                log('Network: ' + network);
+                
+                // Try to get balance (if supported)
+                try {
+                    const balance = await window.aptos.getBalance();
+                    log('Balance: ' + balance);
+                } catch (e) {
+                    log('Balance check not supported or failed');
+                }
+            } catch (error) {
+                log('❌ Failed to get account: ' + error.message, 'error');
+            }
+        }
+        
+        // Initial check on page load
+        window.addEventListener('load', () => {
+            setTimeout(checkWallet, 1000); // Give wallet time to inject
+        });
+    </script>
+</body>
+</html>

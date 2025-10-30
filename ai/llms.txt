@@ -1,0 +1,368 @@
+# llms.txt — Aptos & Move Language Context
+
+## Overview
+This AI provides Move smart contract assistance for developers building on the Aptos blockchain. It is context-aware and helps users create NFT, token, and governance-based modules.
+
+## Move Essentials
+
+### Module Declaration
+Modules define logic executed under account ownership.
+```move
+module <address>::<module_name> {
+    // Module contents
+}
+```
+
+### Resources
+Resources define on-chain data with unique ownership.
+- Must have `key` ability to be stored at account addresses
+- Can only exist once per account (unless in a collection)
+- Cannot be copied or dropped by default
+
+### Functions
+Functions manipulate resources securely.
+- `public entry` - Can be called via transactions
+- `public` - Can be called by other modules
+- `#[view]` - Read-only, can be queried off-chain
+
+### Transaction Atomicity
+Each transaction is atomic - either all operations succeed or all fail.
+
+## Common Framework Imports
+
+```move
+// Account management
+use aptos_framework::account;
+
+// Legacy coin standard
+use aptos_framework::coin;
+
+// New fungible asset standard
+use aptos_framework::fungible_asset;
+
+// Event emission
+use aptos_framework::event;
+
+// Object model
+use aptos_framework::object;
+
+// NFT collections
+use aptos_token::collection;
+
+// NFT tokens
+use aptos_token::token;
+
+// Standard library
+use std::signer;
+use std::string::{Self, String};
+use std::vector;
+use std::option::{Self, Option};
+use std::error;
+```
+
+## Key Move Patterns
+
+### Signer Pattern
+```move
+public entry fun example(account: &signer) {
+    let addr = signer::address_of(account);
+    // Use addr for authorization checks
+}
+```
+
+**Key Functions:**
+- `signer::address_of(&signer)` → returns the signer's account address
+- Use signers to verify ownership and permissions
+
+### Resource Pattern
+```move
+struct MyResource has key {
+    value: u64,
+}
+
+// Create and store resource
+public entry fun initialize(account: &signer) {
+    let addr = signer::address_of(account);
+    assert!(!exists<MyResource>(addr), EALREADY_EXISTS);
+    move_to(account, MyResource { value: 0 });
+}
+
+// Borrow resource immutably
+public fun get_value(addr: address): u64 acquires MyResource {
+    let resource = borrow_global<MyResource>(addr);
+    resource.value
+}
+
+// Borrow resource mutably
+public entry fun update_value(account: &signer, new_value: u64) acquires MyResource {
+    let addr = signer::address_of(account);
+    let resource = borrow_global_mut<MyResource>(addr);
+    resource.value = new_value;
+}
+```
+
+### Event Pattern
+```move
+#[event]
+struct MintEvent has drop, store {
+    minter: address,
+    token_id: u64,
+    timestamp: u64,
+}
+
+public entry fun mint(account: &signer) {
+    // ... minting logic ...
+    event::emit(MintEvent {
+        minter: signer::address_of(account),
+        token_id: 1,
+        timestamp: timestamp::now_seconds(),
+    });
+}
+```
+
+**Key Functions:**
+- `event::emit(event_struct)` → emits custom events
+- Events are recorded on-chain for indexing
+
+### Error Handling
+```move
+/// Error codes
+const EALREADY_EXISTS: u64 = 1;
+const ENOT_OWNER: u64 = 2;
+const EINSUFFICIENT_BALANCE: u64 = 3;
+const EINVALID_AMOUNT: u64 = 4;
+
+public entry fun example(account: &signer, amount: u64) {
+    // Validate inputs
+    assert!(amount > 0, EINVALID_AMOUNT);
+    
+    // Check authorization
+    let addr = signer::address_of(account);
+    assert!(addr == @owner, ENOT_OWNER);
+    
+    // Check state
+    assert!(!exists<MyResource>(addr), EALREADY_EXISTS);
+}
+```
+
+**Key Functions:**
+- `assert!(condition, error_code)` → validates conditions
+- `abort error_code` → immediately halts execution
+
+## NFT Modules
+
+### Create Collection
+```move
+use aptos_token::collection;
+
+public entry fun create_collection(creator: &signer) {
+    collection::create_unlimited_collection(
+        creator,
+        string::utf8(b"Collection Description"),
+        string::utf8(b"Collection Name"),
+        option::none(), // royalty
+        string::utf8(b"https://example.com/collection.json"),
+    );
+}
+```
+
+### Mint Token
+```move
+use aptos_token::token;
+
+public entry fun mint_nft(creator: &signer, to: address) {
+    let token_constructor_ref = token::create_named_token(
+        creator,
+        string::utf8(b"Collection Name"),
+        string::utf8(b"Token Description"),
+        string::utf8(b"Token Name"),
+        option::none(), // royalty
+        string::utf8(b"https://example.com/token.json"),
+    );
+    
+    // Transfer to recipient
+    let token_signer = object::generate_signer(&token_constructor_ref);
+    let token_address = object::address_from_constructor_ref(&token_constructor_ref);
+    object::transfer(&token_signer, token_address, to);
+}
+```
+
+### Verify Ownership
+```move
+public fun is_owner(addr: address, token_addr: address): bool {
+    object::is_owner(object::address_to_object<token::Token>(token_addr), addr)
+}
+```
+
+## Governance Token (Fungible Asset)
+
+### Create Metadata
+```move
+use aptos_framework::fungible_asset::{Self, MintRef, BurnRef, TransferRef, Metadata};
+use aptos_framework::object;
+
+public entry fun initialize(admin: &signer) {
+    let constructor_ref = &object::create_named_object(admin, b"GOVERNANCE_TOKEN");
+    
+    fungible_asset::add_fungibility(
+        constructor_ref,
+        option::none(), // max supply
+        string::utf8(b"Governance Token"),
+        string::utf8(b"GOV"),
+        8, // decimals
+        string::utf8(b"https://example.com/icon.png"),
+        string::utf8(b"https://example.com"),
+    );
+}
+```
+
+### Mint Tokens
+```move
+public entry fun mint(
+    admin: &signer,
+    to: address,
+    amount: u64
+) acquires MintRef {
+    let mint_ref = borrow_global<MintRef>(signer::address_of(admin));
+    let fa = fungible_asset::mint(mint_ref, amount);
+    fungible_asset::deposit(to, fa);
+}
+```
+
+### Burn Tokens
+```move
+public entry fun burn(
+    holder: &signer,
+    amount: u64
+) acquires BurnRef {
+    let burn_ref = borrow_global<BurnRef>(@admin);
+    let fa = fungible_asset::withdraw(holder, amount);
+    fungible_asset::burn(burn_ref, fa);
+}
+```
+
+## Storage Guidelines
+
+### On-Chain Storage Costs
+- Storage is expensive on-chain
+- Each byte costs gas
+- Account storage is permanent
+
+### Best Practices
+- Store large data off-chain (IPFS, Arweave, Shelby.xyz)
+- Only store references or hashes on-chain
+- Use compact data structures
+- Avoid redundant data
+
+### Example: Storing Content Hashes
+```move
+struct ContentReference has key {
+    ipfs_hash: String,        // 46 bytes
+    created_at: u64,          // 8 bytes
+    author: address,          // 32 bytes
+}
+
+public entry fun store_content(
+    account: &signer,
+    ipfs_hash: String,
+) {
+    move_to(account, ContentReference {
+        ipfs_hash,
+        created_at: timestamp::now_seconds(),
+        author: signer::address_of(account),
+    });
+}
+```
+
+## Security Best Practices
+
+### 1. Signer Verification
+Always verify the signer before state changes:
+```move
+public entry fun protected_action(account: &signer) {
+    let addr = signer::address_of(account);
+    assert!(addr == @owner, ENOT_OWNER);
+    // ... perform action ...
+}
+```
+
+### 2. Resource Existence Checks
+Check if resources exist before accessing:
+```move
+assert!(exists<MyResource>(addr), ERESOURCE_NOT_FOUND);
+```
+
+### 3. Input Validation
+Validate all inputs:
+```move
+assert!(amount > 0, EINVALID_AMOUNT);
+assert!(vector::length(&items) <= MAX_ITEMS, ETOO_MANY_ITEMS);
+assert!(addr != @0x0, EINVALID_ADDRESS);
+```
+
+### 4. Integer Safety
+Move prevents overflow/underflow by aborting on arithmetic errors.
+Use checked operations when needed:
+```move
+let result = (amount as u128) * (price as u128);
+assert!(result <= (MAX_U64 as u128), EOVERFLOW);
+```
+
+### 5. Access Control Patterns
+```move
+struct AdminCap has key, store {}
+
+public entry fun initialize(account: &signer) {
+    move_to(account, AdminCap {});
+}
+
+public entry fun admin_only_function(account: &signer) acquires AdminCap {
+    // This will abort if caller doesn't have AdminCap
+    let _ = borrow_global<AdminCap>(signer::address_of(account));
+    // ... perform admin action ...
+}
+```
+
+## Testing
+
+### Unit Tests
+```move
+#[test_only]
+use std::debug;
+
+#[test(account = @0x1)]
+public fun test_initialize(account: &signer) {
+    initialize(account);
+    assert!(exists<MyResource>(signer::address_of(account)), 0);
+}
+
+#[test(account = @0x1)]
+#[expected_failure(abort_code = EALREADY_EXISTS)]
+public fun test_double_initialize(account: &signer) {
+    initialize(account);
+    initialize(account); // Should fail
+}
+```
+
+## Abilities Reference
+
+| Ability | Meaning |
+|---------|---------|
+| `copy` | Value can be copied (duplicated) |
+| `drop` | Value can be dropped (destroyed) |
+| `store` | Value can be stored inside other structs |
+| `key` | Value can be used as a key for global storage |
+
+### Common Ability Combinations
+- `has key` - Top-level resource (stored at account addresses)
+- `has store` - Nested resource (stored inside other structs)
+- `has drop, store` - Events and helper structs
+- `has copy, drop, store` - Simple data types
+
+## Links
+- Official Docs: https://aptos.dev/move/
+- Aptos CLI: https://aptos.dev/cli-tools/
+- Fungible Asset Standard: https://aptos.dev/standards/fungible_asset
+- Aptos Token Standard: https://aptos.dev/standards/aptos-token
+- Move Tutorial: https://aptos.dev/tutorials/first-move-module
+- Move Prover: https://aptos.dev/move/prover/

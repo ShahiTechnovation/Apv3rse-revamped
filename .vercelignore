@@ -6,6 +6,8 @@ node_modules
 .wrangler
 wrangler.toml
 docker
+docker-compose.yaml
+Dockerfile
 docs
 .husky
 *.log
@@ -17,7 +19,6 @@ LICENSE
 test-wallet.html
 commit_message.txt
 scripts
-api
 ai
 llms.txt
 apverse.svg
@@ -36,6 +37,7 @@ SEMANTIC_*.md
 VERCEL_*.md
 WALLET_*.md
 APV_*.md
+CLAUDE_*.md
 *.move
 app/lib/move-templates
 app/lib/.server/move-contracts
@@ -43,13 +45,20 @@ app/lib/.server/vector-embedding-service.ts
 app/lib/.server/aptos-web-scraper.ts
 app/routes/test-footer.tsx
 app/routes/docs.tsx
-server.ts
 worker-configuration.d.ts
 bindings.sh
 pre-start.cjs
 load-context.ts
+functions
 changelog.md
 PROJECT.md
 CONTRIBUTING.md
 FAQ.md
 README.md
+.tool-versions
+.prettierrc
+.prettierignore
+.npmrc
+.editorconfig
+.dockerignore
+eslint.config.mjs

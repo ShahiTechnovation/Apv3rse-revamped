@@ -1,0 +1,10 @@
+Major update with OpenRouter provider and Aptos improvements
+
+- Added OpenRouter LLM provider with 50+ models
+- Fixed token limit errors with intelligent context management
+- Improved error handling with timeout mechanisms
+- Added Aptos context manager for large Move contracts
+- Created Move contract templates for NFTs
+- Enhanced wallet integration
+- Fixed message content double-nesting issue
+- Added comprehensive documentation

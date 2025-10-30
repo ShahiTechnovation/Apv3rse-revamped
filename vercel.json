@@ -1,24 +1,14 @@
 {
-  "buildCommand": "npm run build",
-  "installCommand": "npm install --legacy-peer-deps",
+  "buildCommand": "pnpm run build",
+  "installCommand": "pnpm install --no-frozen-lockfile",
   "outputDirectory": "build/client",
   "framework": null,
   "regions": ["bom1"],
-  "functions": {
-    "api/**/*.js": {
-      "memory": 3008,
-      "maxDuration": 30
-    }
-  },
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "HUSKY": "0",
+    "CI": "true"
   },
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/api/index"
-    }
-  ],
   "headers": [
     {
       "source": "/build/(.*)",

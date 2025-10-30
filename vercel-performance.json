@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json.schemastore.org/web-types.json",
+  "performance": {
+    "monitoring": {
+      "enabled": true,
+      "vitals": {
+        "enabled": true,
+        "sampleRate": 1.0
+      }
+    },
+    "optimizations": {
+      "serverFunctions": {
+        "maxDuration": 30,
+        "memory": 1024,
+        "region": "bom1"
+      },
+      "caching": {
+        "static": {
+          "maxAge": 31536000,
+          "immutable": true
+        },
+        "api": {
+          "maxAge": 0,
+          "staleWhileRevalidate": 60
+        }
+      },
+      "compression": {
+        "enabled": true,
+        "algorithms": ["br", "gzip"]
+      }
+    },
+    "bundleAnalysis": {
+      "chunkSizeLimit": 1000,
+      "warningsEnabled": true,
+      "treeshaking": true
+    },
+    "edgeConfig": {
+      "provider": "vercel",
+      "regions": ["bom1"],
+      "fallback": "iad1"
+    }
+  },
+  "recommendations": {
+    "enableAnalytics": true,
+    "enableSpeedInsights": true,
+    "enableWebVitals": true,
+    "customDomain": {
+      "suggested": true,
+      "benefits": ["Better SEO", "Professional branding", "Faster DNS resolution"]
+    }
+  }
+}
