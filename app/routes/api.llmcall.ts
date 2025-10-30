@@ -1,4 +1,4 @@
-import { type ActionFunctionArgs } from '@remix-run/cloudflare';
+import { type ActionFunctionArgs } from '@remix-run/node';
 
 //import { StreamingTextResponse, parseStreamPart } from 'ai';
 import { streamText } from '~/lib/.server/llm/stream-text';
@@ -77,7 +77,7 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
             content: `${message}`,
           },
         ],
-        env: context.cloudflare.env,
+        env: process.env as any,
         apiKeys,
         providerSettings,
       });
@@ -105,7 +105,7 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
     }
   } else {
     try {
-      const MODEL_LIST = await getModelList({ apiKeys, providerSettings, serverEnv: context.cloudflare.env as any });
+      const MODEL_LIST = await getModelList({ apiKeys, providerSettings, serverEnv: process.env as any });
       const modelDetails = MODEL_LIST.find((m) => m.name === model);
 
       if (!modelDetails) {
@@ -130,7 +130,7 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
         ],
         model: providerInfo.getModelInstance({
           model: modelDetails.name,
-          serverEnv: context.cloudflare.env as any,
+          serverEnv: process.env as any,
           apiKeys,
           providerSettings,
         }),

@@ -3,7 +3,7 @@
  * Provides endpoints to manage llms.txt cache and retrieve context
  */
 
-import { type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/cloudflare';
+import { type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/node';
 import { getAptosContextService } from '~/lib/.server/aptos-context-service';
 import { createScopedLogger } from '~/utils/logger';
 

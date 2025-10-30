@@ -3,7 +3,7 @@
  * Provides endpoints to interact with Aptos MCP server
  */
 
-import { type ActionFunctionArgs } from '@remix-run/cloudflare';
+import { type ActionFunctionArgs } from '@remix-run/node';
 import { getAptosMCPService } from '~/lib/.server/aptos-mcp-service';
 import { createScopedLogger } from '~/utils/logger';
 

@@ -1,29 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60" fill="none">
-  <!-- Logo for dark theme -->
-  <defs>
-    <linearGradient id="hexGradientDark" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#818cf8;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#c084fc;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#f9a8d4;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="textGradientDark" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#818cf8;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#c084fc;stop-opacity:1" />
-    </linearGradient>
-  </defs>
+  <!-- Logo for dark theme - New geometric design -->
+  <g transform="translate(5, 8)">
+    <!-- Top rotated bar -->
+    <path d="M 8 2 L 38 10 L 36 16 L 6 8 Z" fill="#00D9C0" stroke="none"/>
+    <!-- Triangle -->
+    <path d="M 15 18 L 29 38 L 1 38 Z" fill="#00D9C0" stroke="none"/>
+    <!-- Bottom bar -->
+    <rect x="1" y="40" width="38" height="6" rx="2" fill="#00D9C0"/>
+  </g>
   
-  <!-- Hexagon shape -->
-  <path d="M30 10 L45 20 L45 40 L30 50 L15 40 L15 20 Z" fill="url(#hexGradientDark)" />
-  
-  <!-- Stylized "A" in the center -->
-  <path d="M30 20 L24 40 L27 40 L28.5 35 L31.5 35 L33 40 L36 40 L30 20 Z M29 32 L31 32 L30 27 Z" fill="white" />
-  
-  <!-- Orbital rings -->
-  <ellipse cx="30" cy="30" rx="22" ry="8" fill="none" stroke="url(#hexGradientDark)" stroke-width="1.5" opacity="0.5" transform="rotate(-30 30 30)" />
-  <ellipse cx="30" cy="30" rx="22" ry="8" fill="none" stroke="url(#hexGradientDark)" stroke-width="1.5" opacity="0.5" transform="rotate(30 30 30)" />
-  
-  <!-- Text "Apv3rse" -->
-  <text x="60" y="38" font-family="'Inter', 'Segoe UI', Arial, sans-serif" font-size="28" font-weight="700">
-    <tspan fill="url(#textGradientDark)">Ap</tspan><tspan fill="#f0f0f0">v3rse</tspan>
+  <!-- Text -->
+  <text x="60" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="26" font-weight="700" fill="#ffffff">
+    Apv3rse
   </text>
 </svg>

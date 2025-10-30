@@ -1,6 +1,7 @@
 @use 'variables.scss';
 @use 'z-index.scss';
 @use 'animations.scss';
+@use 'light-theme-fix.scss';
 @use 'components/terminal.scss';
 @use 'components/resize-handle.scss';
 @use 'components/code.scss';
@@ -22,13 +23,29 @@ body {
 //   --secondary-color: rgba(138, 43, 226, var(--gradient-opacity));
 //   --accent-color: rgba(180, 170, 220, var(--gradient-opacity));
 // }
-#intro h1 {
-  color: white;
+
+/* Dark mode (and default) intro text - WHITE for visibility */
+:root[data-theme='dark'] #intro h1,
+html:not([data-theme='light']) #intro h1 {
+  color: #ffffff !important;
   font-family: 'Cooper Black', serif; 
 }
-#intro p {
-  color: #e1e7fa;
+
+:root[data-theme='dark'] #intro p,
+html:not([data-theme='light']) #intro p {
+  color: #e1e7fa !important;
 }
+
+/* Light mode intro text - BLACK for visibility */
+:root[data-theme='light'] #intro h1 {
+  color: #000000 !important;
+  font-family: 'Cooper Black', serif; 
+}
+
+:root[data-theme='light'] #intro p {
+  color: #000000 !important;
+}
+
 #textarea1{
   background-color: #002ac2;
 }

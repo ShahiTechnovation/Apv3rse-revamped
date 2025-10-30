@@ -150,11 +150,61 @@ export const ChatImpl = memo(
           enabledTools,
         },
         sendExtraMessageFields: true,
-        onError: (e) => {
+        onError: async (e) => {
           logger.error('Request failed\n\n', e, error);
-          toast.error(
-            'There was an error processing your request: ' + (e.message ? e.message : 'No details were returned'),
-          );
+          
+          // Try to parse error response
+          let errorMessage = 'No details were returned';
+          let suggestion = '';
+          
+          if (e.message) {
+            errorMessage = e.message;
+          } else if (e instanceof Response) {
+            try {
+              const errorData = await e.json() as { error?: string; details?: string; suggestion?: string };
+              errorMessage = errorData.error || errorData.details || errorMessage;
+              suggestion = errorData.suggestion || '';
+            } catch (parseError) {
+              // If JSON parsing fails, try to read as text
+              try {
+                const errorText = await e.text();
+                errorMessage = errorText || errorMessage;
+              } catch (textError) {
+                logger.error('Failed to parse error response:', textError);
+              }
+            }
+          }
+          
+          // Check for timeout errors
+          if (errorMessage.includes('timeout') || errorMessage.includes('Timeout')) {
+            toast.error(
+              `Request timeout: The AI provider is not responding. Please try again.\n${suggestion || 'Check your API key and provider settings.'}`,
+              {
+                autoClose: 10000,
+              }
+            );
+          } else if (errorMessage.includes('API key')) {
+            toast.error(
+              'API Key Error: Please check your API key in the settings.',
+              {
+                autoClose: 10000,
+              }
+            );
+          } else if (errorMessage.includes('token') || errorMessage.includes('context')) {
+            toast.error(
+              'Context Length Error: The conversation is too long. Try starting a new chat.',
+              {
+                autoClose: 10000,
+              }
+            );
+          } else {
+            toast.error(
+              `Error: ${errorMessage}${suggestion ? '\n' + suggestion : ''}`,
+              {
+                autoClose: 8000,
+              }
+            );
+          }
         },
         onFinish: (message, response) => {
           const usage = response.usage;
@@ -366,20 +416,24 @@ export const ChatImpl = memo(
             return;
           }
         } else {
+          const messageContent = imageDataList.length > 0
+            ? [
+                {
+                  type: 'text' as const,
+                  text: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${_input}`,
+                },
+                ...imageDataList.map((imageData) => ({
+                  type: 'image' as const,
+                  image: imageData,
+                })),
+              ]
+            : `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${_input}`;
+
           setMessages([
             {
               id: `${new Date().getTime()}`,
               role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${_input}`,
-                },
-                ...imageDataList.map((imageData) => ({
-                  type: 'image',
-                  image: imageData,
-                })),
-              ] as any, // Type assertion to bypass compiler check
+              content: messageContent as any,
             },
           ]);
           reload();
@@ -397,18 +451,22 @@ export const ChatImpl = memo(
          * manually reset the input and we'd have to manually pass in file attachments. However, those
          * aren't relevant here.
          */
+        const messageContent = imageDataList.length > 0
+          ? [
+              {
+                type: 'text' as const,
+                text: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${_input}`,
+              },
+              ...imageDataList.map((imageData) => ({
+                type: 'image' as const,
+                image: imageData,
+              })),
+            ]
+          : `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${_input}`;
+
         append({
           role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${_input}`,
-            },
-            ...imageDataList.map((imageData) => ({
-              type: 'image',
-              image: imageData,
-            })),
-          ] as any, // Type assertion to bypass compiler check
+          content: messageContent as any,
         });
 
         /**
@@ -417,18 +475,22 @@ export const ChatImpl = memo(
          */
         workbenchStore.resetAllFileModifications();
       } else {
+        const messageContent = imageDataList.length > 0
+          ? [
+              {
+                type: 'text' as const,
+                text: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${_input}`,
+              },
+              ...imageDataList.map((imageData) => ({
+                type: 'image' as const,
+                image: imageData,
+              })),
+            ]
+          : `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${_input}`;
+
         append({
           role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${_input}`,
-            },
-            ...imageDataList.map((imageData) => ({
-              type: 'image',
-              image: imageData,
-            })),
-          ] as any, // Type assertion to bypass compiler check
+          content: messageContent as any,
         });
       }
 

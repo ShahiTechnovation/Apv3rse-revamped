@@ -1,4 +1,4 @@
-import { type ActionFunctionArgs } from '@remix-run/cloudflare';
+import { type ActionFunctionArgs } from '@remix-run/node';
 import { createDataStream } from 'ai';
 import { MAX_RESPONSE_SEGMENTS, MAX_TOKENS } from '~/lib/.server/llm/constants';
 import { CONTINUE_PROMPT } from '~/lib/common/prompts/prompts';
@@ -33,15 +33,23 @@ function parseCookies(cookieHeader: string): Record<string, string> {
 }
 
 async function chatAction({ context, request }: ActionFunctionArgs) {
-  const { messages, files, promptId, contextOptimization, enabledTools, isAptosMode, enableExtendedThinking } = await request.json<{
-    messages: Messages;
-    files: any;
-    promptId?: string;
-    contextOptimization: boolean;
-    enabledTools?: string[];
-    isAptosMode?: boolean;
-    enableExtendedThinking?: boolean;
-  }>();
+  // Add request timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+    logger.error('Request timeout after 30 seconds');
+  }, 30000); // 30 second timeout
+
+  try {
+    const { messages, files, promptId, contextOptimization, enabledTools, isAptosMode, enableExtendedThinking } = await request.json<{
+      messages: Messages;
+      files: any;
+      promptId?: string;
+      contextOptimization: boolean;
+      enabledTools?: string[];
+      isAptosMode?: boolean;
+      enableExtendedThinking?: boolean;
+    }>();
 
   const cookieHeader = request.headers.get('Cookie');
   const apiKeys = JSON.parse(parseCookies(cookieHeader || '').apiKeys || '{}');
@@ -49,17 +57,28 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
     parseCookies(cookieHeader || '').providers || '{}',
   );
 
-  // Enhance prompt with Aptos context if needed
-  let enhancedMessages = messages;
-  let aptosSystemPrompt = '';
-  
-  if (isAptosMode && messages.length > 0) {
-    try {
-      const promptEnhancer = await getAptosPromptEnhancer();
-      const lastMessage = messages[messages.length - 1];
-      
-      if (lastMessage.role === 'user') {
-        const enhanced = await promptEnhancer.enhancePrompt(lastMessage.content, isAptosMode);
+    // Enhance prompt with Aptos context if needed
+    let enhancedMessages = messages;
+    let aptosSystemPrompt = '';
+    
+    if (isAptosMode && messages.length > 0) {
+      try {
+        // Get OpenAI API key from environment
+        const openaiApiKey = process.env.OPENAI_API_KEY || apiKeys.openai;
+        
+        // Note: Vectorize is Cloudflare-specific, using null for Vercel
+        const vectorize = undefined;
+        
+        logger.info('Initializing Aptos prompt enhancer...');
+        const promptEnhancer = await getAptosPromptEnhancer(vectorize, openaiApiKey);
+        const lastMessage = messages[messages.length - 1];
+        
+        if (lastMessage.role === 'user') {
+          logger.info('Enhancing user prompt with Aptos context...');
+          const messageContent = typeof lastMessage.content === 'string' 
+            ? lastMessage.content 
+            : JSON.stringify(lastMessage.content);
+          const enhanced = await promptEnhancer.enhancePrompt(messageContent, isAptosMode);
         
         if (enhanced.hasContext) {
           logger.info(`Enhanced prompt with Aptos context (source: ${enhanced.contextSource})`);
@@ -72,6 +91,8 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
             ...messages.slice(0, -1),
             { role: 'user', content: enhanced.userPrompt },
           ];
+        } else {
+          logger.warn('No Aptos context found for prompt');
         }
       }
     } catch (error) {
@@ -80,15 +101,13 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
     }
   }
 
-  const stream = new SwitchableStream();
+    const stream = new SwitchableStream();
 
-  const cumulativeUsage = {
-    completionTokens: 0,
-    promptTokens: 0,
-    totalTokens: 0,
-  };
-
-  try {
+    const cumulativeUsage = {
+      completionTokens: 0,
+      promptTokens: 0,
+      totalTokens: 0,
+    };
     const options: StreamingOptions = {
       toolChoice: 'none',
       onFinish: async ({ text: content, finishReason, usage }) => {
@@ -171,7 +190,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
 
         const result = await streamText({
           messages: enhancedMessages,
-          env: context.cloudflare.env,
+          env: process.env as any,
           options,
           apiKeys,
           files,
@@ -188,12 +207,18 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
         return;
       },
     };
-    const totalMessageContent = enhancedMessages.reduce((acc, message) => acc + message.content, '');
+    const totalMessageContent = enhancedMessages.reduce((acc, message) => {
+      const content = typeof message.content === 'string' 
+        ? message.content 
+        : JSON.stringify(message.content);
+      return acc + content;
+    }, '');
     logger.debug(`Total message length: ${totalMessageContent.split(' ').length}, words`);
 
-    const result = await streamText({
+    // Add timeout to streamText call
+    const streamTextPromise = streamText({
       messages: enhancedMessages,
-      env: context.cloudflare.env,
+      env: process.env as any,
       options,
       apiKeys,
       files,
@@ -204,6 +229,19 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
       aptosSystemPrompt,
       enableExtendedThinking,
     });
+
+    // Race between streamText and timeout
+    const result = await Promise.race([
+      streamTextPromise,
+      new Promise((_, reject) => {
+        controller.signal.addEventListener('abort', () => {
+          reject(new Error('Request timeout: No response from AI provider after 30 seconds'));
+        });
+      }),
+    ]).catch((error) => {
+      logger.error('StreamText error:', error);
+      throw error;
+    }) as any;
 
     (async () => {
       for await (const part of result.fullStream) {
@@ -218,7 +256,9 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
 
     stream.switchSource(result.toDataStream());
 
-    // return createrespo
+    // Clear timeout on success
+    clearTimeout(timeoutId);
+
     return new Response(stream.readable, {
       status: 200,
       headers: {
@@ -229,18 +269,96 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
       },
     });
   } catch (error: any) {
-    logger.error(error);
+    // Clear timeout on error
+    clearTimeout(timeoutId);
+    logger.error('Chat API Error:', error);
 
+    // Extract error message
+    const errorMessage = error.message || error.toString() || 'An unknown error occurred';
+    
     if (error.message?.includes('API key')) {
-      throw new Response('Invalid or missing API key', {
-        status: 401,
-        statusText: 'Unauthorized',
-      });
+      throw new Response(
+        JSON.stringify({ 
+          error: 'Invalid or missing API key. Please check your API key settings.',
+          details: errorMessage 
+        }), 
+        {
+          status: 401,
+          statusText: 'Unauthorized',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
     }
 
-    throw new Response(null, {
-      status: 500,
-      statusText: 'Internal Server Error',
-    });
+    // Check for model-related errors
+    if (error.message?.includes('model') || error.message?.includes('Model')) {
+      throw new Response(
+        JSON.stringify({ 
+          error: 'Model configuration error. Please check your selected model and provider.',
+          details: errorMessage 
+        }), 
+        {
+          status: 400,
+          statusText: 'Bad Request',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+    }
+
+    // Check for provider errors
+    if (error.message?.includes('provider') || error.message?.includes('Provider')) {
+      throw new Response(
+        JSON.stringify({ 
+          error: 'Provider configuration error. Please check your provider settings.',
+          details: errorMessage 
+        }), 
+        {
+          status: 400,
+          statusText: 'Bad Request',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+    }
+
+    // Check for timeout error
+    if (errorMessage.includes('timeout') || errorMessage.includes('Timeout')) {
+      throw new Response(
+        JSON.stringify({ 
+          error: 'Request timeout. The AI provider is not responding.',
+          details: 'Please try again or check your API key and provider settings.',
+          suggestion: 'If using OpenRouter, ensure your API key has sufficient credits.'
+        }), 
+        {
+          status: 504,
+          statusText: 'Gateway Timeout',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+    }
+
+    // Generic error with details
+    throw new Response(
+      JSON.stringify({ 
+        error: 'An error occurred while processing your request.',
+        details: errorMessage 
+      }), 
+      {
+        status: 500,
+        statusText: 'Internal Server Error',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+  } finally {
+    clearTimeout(timeoutId);
   }
 }

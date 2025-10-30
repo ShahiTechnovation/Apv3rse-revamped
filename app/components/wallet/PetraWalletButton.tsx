@@ -1,10 +1,12 @@
-import React from 'react';
-import { useWallet } from '~/lib/contexts/WalletContext';
+import React, { useState } from 'react';
+import { useWallet } from '~/lib/contexts/SimpleWalletContext';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { classNames } from '~/utils/classNames';
+import { toast } from 'react-toastify';
 
 export const PetraWalletButton: React.FC = () => {
-  const { account, isConnected, isConnecting, network, connect, disconnect } = useWallet();
+  const { account, isConnected, isConnecting, network, walletName, connect, disconnect } = useWallet();
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
 
   const formatAddress = (address: string) => {
     if (!address) return '';
@@ -30,7 +32,7 @@ export const PetraWalletButton: React.FC = () => {
   if (!isConnected) {
     return (
       <button
-        onClick={connect}
+        onClick={() => connect()}
         disabled={isConnecting}
         className={classNames(
           'flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all',
@@ -72,42 +74,43 @@ export const PetraWalletButton: React.FC = () => {
   }
 
   return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
-        <button
-          className={classNames(
-            'flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all',
-            'bg-bolt-elements-background-depth-2 text-bolt-elements-textPrimary',
-            'hover:bg-bolt-elements-background-depth-3',
-            'border border-bolt-elements-borderColor',
-            'shadow-sm hover:shadow-md'
-          )}
-        >
-          <div className="flex items-center gap-2">
-            <div className={classNames('w-2 h-2 rounded-full', getNetworkBadgeColor(network))} />
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="text-[#667eea]"
-            >
-              <path
-                d="M17.7 7.7C19.2 9.2 20 11.1 20 13.2C20 17.6 16.4 21.2 12 21.2C7.6 21.2 4 17.6 4 13.2C4 11.1 4.8 9.2 6.3 7.7L12 2L17.7 7.7Z"
-                fill="currentColor"
-                opacity="0.9"
-              />
-              <path
-                d="M12 2L6.3 7.7C4.8 9.2 4 11.1 4 13.2C4 17.6 7.6 21.2 12 21.2V2Z"
-                fill="currentColor"
-              />
-            </svg>
-            <span>{formatAddress(account || '')}</span>
-            <div className="i-ph:caret-down text-xs" />
-          </div>
-        </button>
-      </DropdownMenu.Trigger>
+    <div className="flex items-center gap-2">
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger asChild>
+          <button
+            className={classNames(
+              'flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all',
+              'bg-bolt-elements-background-depth-2 text-bolt-elements-textPrimary',
+              'hover:bg-bolt-elements-background-depth-3',
+              'border border-bolt-elements-borderColor',
+              'shadow-sm hover:shadow-md'
+            )}
+          >
+            <div className="flex items-center gap-2">
+              <div className={classNames('w-2 h-2 rounded-full', getNetworkBadgeColor(network))} />
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="text-[#667eea]"
+              >
+                <path
+                  d="M17.7 7.7C19.2 9.2 20 11.1 20 13.2C20 17.6 16.4 21.2 12 21.2C7.6 21.2 4 17.6 4 13.2C4 11.1 4.8 9.2 6.3 7.7L12 2L17.7 7.7Z"
+                  fill="currentColor"
+                  opacity="0.9"
+                />
+                <path
+                  d="M12 2L6.3 7.7C4.8 9.2 4 11.1 4 13.2C4 17.6 7.6 21.2 12 21.2V2Z"
+                  fill="currentColor"
+                />
+              </svg>
+              <span>{formatAddress(account || '')}</span>
+              <div className="i-ph:caret-down text-xs" />
+            </div>
+          </button>
+        </DropdownMenu.Trigger>
 
       <DropdownMenu.Portal>
         <DropdownMenu.Content
@@ -119,7 +122,7 @@ export const PetraWalletButton: React.FC = () => {
           sideOffset={5}
         >
           <div className="px-2 py-1.5 text-xs text-bolt-elements-textSecondary">
-            Connected to Petra
+            Connected to {walletName || 'Wallet'}
           </div>
           
           <DropdownMenu.Separator className="h-[1px] bg-bolt-elements-borderColor my-1" />
@@ -150,6 +153,7 @@ export const PetraWalletButton: React.FC = () => {
             onClick={() => {
               if (account) {
                 navigator.clipboard.writeText(account);
+                toast.success('Address copied to clipboard!');
               }
             }}
           >
@@ -179,15 +183,82 @@ export const PetraWalletButton: React.FC = () => {
             className={classNames(
               'flex items-center gap-2 px-2 py-1.5 text-sm rounded cursor-pointer',
               'text-red-500 hover:bg-red-500/10',
-              'outline-none'
+              'outline-none',
+              {
+                'opacity-50 cursor-not-allowed': isDisconnecting,
+              }
             )}
-            onClick={disconnect}
+            onClick={async () => {
+              if (isDisconnecting) return;
+              
+              try {
+                setIsDisconnecting(true);
+                await disconnect();
+                toast.info('Wallet disconnected');
+              } catch (error) {
+                console.error('Error disconnecting wallet:', error);
+                toast.error('Failed to disconnect wallet');
+              } finally {
+                setIsDisconnecting(false);
+              }
+            }}
+            disabled={isDisconnecting}
           >
-            <div className="i-ph:sign-out text-base" />
-            Disconnect
+            {isDisconnecting ? (
+              <>
+                <div className="i-svg-spinners:90-ring-with-bg text-base animate-spin" />
+                <span>Disconnecting...</span>
+              </>
+            ) : (
+              <>
+                <div className="i-ph:sign-out text-base" />
+                <span>Disconnect</span>
+              </>
+            )}
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
+    
+    <button
+      onClick={async (e) => {
+        e.preventDefault();
+        console.log('Disconnect button clicked');
+        
+        if (isDisconnecting) {
+          console.log('Already disconnecting, ignoring click');
+          return;
+        }
+        
+        try {
+          console.log('Starting disconnect process...');
+          setIsDisconnecting(true);
+          await disconnect();
+          console.log('Disconnect completed successfully');
+          toast.success('Wallet disconnected');
+        } catch (error) {
+          console.error('Error disconnecting wallet:', error);
+          toast.error('Failed to disconnect wallet. Please try disconnecting from Petra wallet directly.');
+        } finally {
+          setIsDisconnecting(false);
+        }
+      }}
+      disabled={isDisconnecting}
+      className={classNames(
+        'flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all',
+        'bg-red-500/10 text-red-500 border border-red-500/30',
+        'hover:bg-red-500/20 hover:border-red-500/50',
+        'disabled:opacity-50 disabled:cursor-not-allowed',
+        'shadow-sm hover:shadow-md'
+      )}
+      title="Disconnect Wallet"
+    >
+      {isDisconnecting ? (
+        <div className="i-svg-spinners:90-ring-with-bg text-base animate-spin" />
+      ) : (
+        <div className="i-ph:sign-out text-base" />
+      )}
+    </button>
+  </div>
   );
 };

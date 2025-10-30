@@ -1,0 +1,90 @@
+/* Theme-Specific Text Color Fixes */
+
+/* Dark Mode (and default) - Ensure WHITE text */
+:root[data-theme='dark'],
+html:not([data-theme='light']) {
+  /* Ensure text has proper white/light colors */
+  h1, h2, h3, h4, h5, h6, p, span, div, label {
+    &.text-bolt-elements-textPrimary {
+      color: #ffffff !important;
+    }
+    
+    &.text-bolt-elements-textSecondary {
+      color: #9ca3af !important;
+    }
+    
+    &.text-bolt-elements-textTertiary {
+      color: #6b7280 !important;
+    }
+  }
+
+  /* Specific fix for intro text in dark mode */
+  #intro {
+    h1 {
+      color: #ffffff !important;
+    }
+    p {
+      color: #e1e7fa !important;
+    }
+  }
+}
+
+/* Light Mode - Ensure BLACK text for visibility */
+:root[data-theme='light'] {
+  /* Override any animations that might affect opacity */
+  .animate-fade-in {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  /* Ensure text has maximum contrast */
+  h1, h2, h3, h4, h5, h6, p, span, div, label {
+    &.text-bolt-elements-textPrimary {
+      color: #000000 !important;
+    }
+    
+    &.text-bolt-elements-textSecondary {
+      color: #000000 !important;
+    }
+    
+    &.text-bolt-elements-textTertiary {
+      color: #2a2a2a !important;
+    }
+  }
+
+  /* Specific fix for intro text */
+  #intro {
+    h1, p {
+      color: #000000 !important;
+      opacity: 1 !important;
+      text-shadow: none !important;
+    }
+  }
+
+  /* Ensure no animation delays affect visibility */
+  .animation-delay-200 {
+    animation-delay: 0s !important;
+    opacity: 1 !important;
+  }
+
+  /* Fix input placeholders */
+  input::placeholder,
+  textarea::placeholder {
+    color: #666666 !important;
+    opacity: 1 !important;
+  }
+
+  /* Ensure all text in buttons is visible */
+  button, a {
+    &:not(.bg-gradient-to-r) {
+      color: #000000;
+    }
+  }
+
+  /* Fix for any gray text that might be too light */
+  .text-gray-500,
+  .text-gray-400,
+  .text-gray-600 {
+    color: #333333 !important;
+  }
+}

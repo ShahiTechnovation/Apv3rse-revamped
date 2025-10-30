@@ -1,23 +1,26 @@
 import { useStore } from '@nanostores/react';
-import type { LinksFunction } from '@remix-run/cloudflare';
+import type { LinksFunction } from '@remix-run/node';
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/react';
-import tailwindReset from '@unocss/reset/tailwind-compat.css?url';
-import { themeStore } from './lib/stores/theme';
-import { stripIndents } from './utils/stripIndent';
-import { createHead } from 'remix-island';
 import { useEffect } from 'react';
-import { WalletProvider } from './lib/contexts/WalletContext';
-
+import { ClientOnly } from 'remix-utils/client-only';
+import { createHead } from 'remix-island';
+import tailwindReset from '@unocss/reset/tailwind-compat.css?url';
 import reactToastifyStyles from 'react-toastify/dist/ReactToastify.css?url';
 import globalStyles from './styles/index.scss?url';
 import xtermStyles from '@xterm/xterm/css/xterm.css?url';
+import { themeStore } from './lib/stores/theme';
+import { logStore } from './lib/stores/logs';
+import { stripIndents } from './utils/stripIndent';
+import { WalletProvider } from './lib/contexts/SimpleWalletContext';
+import { TokenShowcaseModal } from './components/wallet/TokenShowcaseModal';
+import { ToastContainer } from 'react-toastify';
 
 import 'virtual:uno.css';
 
 export const links: LinksFunction = () => [
   {
     rel: 'icon',
-    href: '/apv3rse-favicon.svg',
+    href: '/icons/apverse.svg',
     type: 'image/svg+xml',
   },
   { rel: 'stylesheet', href: reactToastifyStyles },
@@ -79,8 +82,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-import { logStore } from './lib/stores/logs';
-
 export default function App() {
   const theme = useStore(themeStore);
 
@@ -97,6 +98,25 @@ export default function App() {
     <WalletProvider>
       <Layout>
         <Outlet />
+        <ClientOnly>
+          {() => (
+            <>
+              <TokenShowcaseModal />
+              <ToastContainer
+                position="bottom-right"
+                autoClose={5000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme={theme}
+              />
+            </>
+          )}
+        </ClientOnly>
       </Layout>
     </WalletProvider>
   );

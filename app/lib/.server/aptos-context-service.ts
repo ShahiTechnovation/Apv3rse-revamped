@@ -1,8 +1,10 @@
 /**
  * Aptos Context Service
  * Fetches, caches, and indexes Aptos documentation from llms.txt files
- * Provides relevant context for AI prompts
+ * Provides relevant context for AI prompts with semantic search support
  */
+
+import { getVectorEmbeddingService, VectorEmbeddingService } from './vector-embedding-service';
 
 interface LLMsContent {
   full: string;
@@ -26,6 +28,8 @@ class AptosContextService {
   private lastFetch: number = 0;
   private cacheTTL: number;
   private maxTokens: number;
+  private vectorService: VectorEmbeddingService | null = null;
+  private useSemanticSearch: boolean = true;
 
   private readonly LLMS_URLS = {
     full: 'https://aptos.dev/llms-full.txt',
@@ -41,9 +45,23 @@ class AptosContextService {
     'validator', 'staking', 'gas', 'coin', 'collection', 'digital asset'
   ];
 
-  constructor() {
+  constructor(vectorize?: VectorizeIndex, openaiApiKey?: string) {
     this.cacheTTL = parseInt(process.env.APTOS_LLMS_CACHE_TTL || '86400', 10) * 1000; // Default 24 hours
     this.maxTokens = parseInt(process.env.APTOS_CONTEXT_MAX_TOKENS || '4000', 10);
+    
+    // Initialize vector service if available
+    if (vectorize && openaiApiKey) {
+      getVectorEmbeddingService(vectorize, openaiApiKey).then(service => {
+        this.vectorService = service;
+        console.log('[AptosContext] Semantic search enabled');
+      }).catch(err => {
+        console.warn('[AptosContext] Could not initialize semantic search:', err);
+        this.useSemanticSearch = false;
+      });
+    } else {
+      this.useSemanticSearch = false;
+      console.log('[AptosContext] Semantic search disabled (using keyword matching)');
+    }
   }
 
   /**
@@ -178,7 +196,7 @@ class AptosContextService {
   }
 
   /**
-   * Get relevant context for a user query
+   * Get relevant context for a user query with hybrid search
    */
   async getRelevantContext(query: string): Promise<string> {
     // Refresh cache if needed
@@ -194,11 +212,44 @@ class AptosContextService {
     const useFullDocs = this.shouldUseFullDocs(query);
     const source = useFullDocs ? this.cache.full : this.cache.small;
 
-    // Extract relevant chunks
-    const chunks = this.extractRelevantChunks(query, source);
+    // Extract relevant chunks using keyword search
+    const keywordChunks = this.extractRelevantChunks(query, source);
+
+    // Try hybrid search if vector service is available
+    let finalChunks = keywordChunks;
+    if (this.useSemanticSearch && this.vectorService?.isAvailable()) {
+      try {
+        const keywordMatches = keywordChunks.map(chunk => ({
+          content: chunk.content,
+          topic: chunk.topic,
+          score: this.calculateRelevanceScore(
+            { header: chunk.topic, content: chunk.content },
+            this.extractKeywords(query)
+          ),
+        }));
+
+        const hybridResults = await this.vectorService.hybridSearch(
+          query,
+          keywordMatches,
+          Math.min(10, keywordChunks.length)
+        );
+
+        // Convert hybrid results back to ContextChunk format
+        finalChunks = hybridResults.map(result => ({
+          topic: result.topic,
+          content: result.content,
+          source: (source === this.cache?.full ? 'full' : 'small') as 'full' | 'small' | 'index',
+        }));
+
+        console.log(`[AptosContext] Used hybrid search (${hybridResults.length} results)`);
+      } catch (error) {
+        console.warn('[AptosContext] Hybrid search failed, falling back to keyword search:', error);
+        finalChunks = keywordChunks;
+      }
+    }
 
     // Combine and limit by token count
-    const context = this.combineChunks(chunks);
+    const context = this.combineChunks(finalChunks);
 
     return context;
   }
@@ -325,9 +376,12 @@ let aptosContextService: AptosContextService | null = null;
 /**
  * Get or create the Aptos Context Service instance
  */
-export async function getAptosContextService(): Promise<AptosContextService> {
+export async function getAptosContextService(
+  vectorize?: VectorizeIndex,
+  openaiApiKey?: string
+): Promise<AptosContextService> {
   if (!aptosContextService) {
-    aptosContextService = new AptosContextService();
+    aptosContextService = new AptosContextService(vectorize, openaiApiKey);
     await aptosContextService.initialize();
   }
   return aptosContextService;

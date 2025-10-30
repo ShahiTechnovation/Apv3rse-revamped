@@ -3,7 +3,7 @@
  * Handles the complete flow from prompt to deployment
  */
 
-import { type ActionFunctionArgs } from '@remix-run/cloudflare';
+import { type ActionFunctionArgs } from '@remix-run/node';
 import { getAptosExecutionPipeline } from '~/lib/.server/aptos-execution-pipeline';
 import { createScopedLogger } from '~/utils/logger';
 

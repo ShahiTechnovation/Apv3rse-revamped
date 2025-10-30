@@ -5,6 +5,7 @@ import { classNames } from '~/utils/classNames';
 import { HeaderActionButtons } from './HeaderActionButtons.client';
 import { ChatDescription } from '~/lib/persistence/ChatDescription.client';
 import { PetraWalletButton } from '~/components/wallet/PetraWalletButton';
+import { TokenBalance } from '~/components/wallet/TokenBalance';
 
 export function Header() {
   const chat = useStore(chatStore);
@@ -18,10 +19,9 @@ export function Header() {
     >
       <div className="flex items-center gap-2 z-logo text-bolt-elements-textPrimary cursor-pointer">
         <div className="i-ph:sidebar-simple-duotone text-xl" />
-        <a href="/" className="text-2xl font-semibold text-accent flex items-center">
-          {/* SVG logos with text included */}
-          <img src="/apv3rse-logo-light.svg" alt="Apv3rse" className="h-[40px] w-auto inline-block dark:hidden" />
-          <img src="/apv3rse-logo-dark.svg" alt="Apv3rse" className="h-[40px] w-auto inline-block hidden dark:block" />
+        <a href="/" className="text-2xl font-semibold text-accent flex items-center gap-2">
+          <img src="/icons/apverse.svg" alt="Apv3rse Logo" width="40" height="40" className="flex-shrink-0" />
+          <span className="hidden sm:inline">Apv3rse</span>
         </a>
       </div>
       {chat.started && ( // Display ChatDescription and HeaderActionButtons only when the chat has started.
@@ -32,6 +32,7 @@ export function Header() {
           <ClientOnly>
             {() => (
               <div className="flex items-center gap-3 mr-1">
+                <TokenBalance />
                 <PetraWalletButton />
                 <HeaderActionButtons />
               </div>
@@ -42,7 +43,12 @@ export function Header() {
       {!chat.started && (
         <div className="ml-auto">
           <ClientOnly>
-            {() => <PetraWalletButton />}
+            {() => (
+              <div className="flex items-center gap-3">
+                <TokenBalance />
+                <PetraWalletButton />
+              </div>
+            )}
           </ClientOnly>
         </div>
       )}
